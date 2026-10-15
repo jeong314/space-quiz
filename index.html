@@ -107,6 +107,18 @@
     .result-bars { display: flex; gap: 5px; justify-content: center; margin: 22px 0; }
     .result-bars span { width: 25px; height: 7px; border-radius: 4px; background: var(--red-bg); border: 1px solid #ed9da1; }
     .result-bars span.hit { background: #72c995; border-color: #72c995; }
+    .answer-review-section { margin: 28px 0; text-align: left; }
+    .answer-review-section h3 { margin: 0 0 12px; font-size: 17px; }
+    .answer-review { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; }
+    .review-item { border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+    .review-item h4 { margin: 0 0 9px; font-size: 14px; line-height: 1.5; }
+    .review-status { margin: 0 0 11px; font-size: 12px; font-weight: 700; }
+    .review-status.correct { color: var(--green); }
+    .review-status.incorrect { color: var(--red); }
+    .review-answers { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: 0; font-size: 12px; line-height: 1.5; text-align: left; }
+    .review-answers dt { color: var(--muted); }
+    .review-answers dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+    .review-fact { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; line-height: 1.6; text-align: left; }
     .enter { animation: appear .3s ease; }
     @keyframes float { 50% { transform: translateY(-7px) rotate(-3deg); } }
     @keyframes twinkle { to { opacity: .3; } }
@@ -189,6 +201,10 @@
       <div class="result-score" id="result-score"></div>
       <div class="result-detail" id="result-detail"></div>
       <div class="result-bars" id="result-bars" aria-hidden="true"></div>
+      <section class="answer-review-section" aria-labelledby="answer-review-title">
+        <h3 id="answer-review-title">Review your answers</h3>
+        <ol class="answer-review" id="answer-review"></ol>
+      </section>
       <button class="next" id="restart">Explore again <span aria-hidden="true">↻</span></button>
     </section>
     <footer class="footer">
@@ -258,7 +274,7 @@
       const item = questions[current];
       const isCorrect = selected === item.correct;
       if (isCorrect) score++;
-      history.push(isCorrect);
+      history.push({ selected, correct: item.correct });
       Array.from($("answers").children).forEach((button, index) => {
         button.disabled = true;
         if (index === item.correct || (index === selected && !isCorrect)) {
@@ -302,8 +318,33 @@
       $("result-detail").textContent = `${score * 10}% correct · ${questions.length - score} more discoveries to master`;
       $("result-bars").replaceChildren(...history.map((hit) => {
         const bar = document.createElement("span");
-        if (hit) bar.className = "hit";
+        if (hit.selected === hit.correct) bar.className = "hit";
         return bar;
+      }));
+      $("answer-review").replaceChildren(...questions.map((item, index) => {
+        const answer = history[index];
+        const isCorrect = answer.selected === answer.correct;
+        const entry = document.createElement("li");
+        entry.className = "review-item";
+        const question = document.createElement("h4");
+        question.textContent = `${index + 1}. ${item.question}`;
+        const status = document.createElement("p");
+        status.className = `review-status ${isCorrect ? "correct" : "incorrect"}`;
+        status.textContent = isCorrect ? "✓ Correct" : "× Incorrect";
+        const answers = document.createElement("dl");
+        answers.className = "review-answers";
+        [["Your answer", item.answers[answer.selected]], ["Correct answer", item.answers[item.correct]]].forEach(([label, value]) => {
+          const term = document.createElement("dt");
+          term.textContent = label;
+          const description = document.createElement("dd");
+          description.textContent = value;
+          answers.append(term, description);
+        });
+        const fact = document.createElement("p");
+        fact.className = "review-fact";
+        fact.textContent = item.fact;
+        entry.append(question, status, answers, fact);
+        return entry;
       }));
       $("result-title").focus({ preventScroll: true });
       $("results").scrollIntoView({ block: "nearest" });
@@ -316,6 +357,7 @@
     });
     $("restart").addEventListener("click", () => {
       current = 0; score = 0; history = [];
+      $("answer-review").replaceChildren();
       $("results").hidden = true;
       $("quiz").hidden = false;
       renderQuestion(true);
