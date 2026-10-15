@@ -103,6 +103,7 @@
     .result-score { font-size: 64px; font-weight: 750; letter-spacing: -3px; color: var(--accent); margin: 20px 0 0; }
     .result-score span { color: var(--muted); font-size: 25px; letter-spacing: -1px; }
     .result-detail { font-size: 12px; color: var(--muted); margin: 5px 0 24px; }
+    .result .result-time { font-size: 14px; color: var(--ink); margin: 0 0 22px; font-variant-numeric: tabular-nums; }
     .result .next { width: 100%; justify-content: center; font-size: 14px; padding: 14px; }
     .result-bars { display: flex; gap: 5px; justify-content: center; margin: 22px 0; }
     .result-bars span { width: 25px; height: 7px; border-radius: 4px; background: var(--red-bg); border: 1px solid #ed9da1; }
@@ -200,6 +201,7 @@
       <p id="result-message"></p>
       <div class="result-score" id="result-score"></div>
       <div class="result-detail" id="result-detail"></div>
+      <p class="result-time" id="result-time"></p>
       <div class="result-bars" id="result-bars" aria-hidden="true"></div>
       <section class="answer-review-section" aria-labelledby="answer-review-title">
         <h3 id="answer-review-title">Review your answers</h3>
@@ -230,6 +232,12 @@
     let score = 0;
     let answered = false;
     let history = [];
+    let startedAt = performance.now();
+
+    function formatElapsedTime(milliseconds) {
+      const totalSeconds = Math.floor(milliseconds / 1000);
+      return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, "0")}`;
+    }
 
     function updateProgress() {
       const completed = history.length;
@@ -316,6 +324,7 @@
       $("result-message").textContent = reaction[3];
       $("result-score").innerHTML = `${score}<span> / ${questions.length}</span>`;
       $("result-detail").textContent = `${score * 10}% correct · ${questions.length - score} more discoveries to master`;
+      $("result-time").textContent = `Time: ${formatElapsedTime(performance.now() - startedAt)}`;
       $("result-bars").replaceChildren(...history.map((hit) => {
         const bar = document.createElement("span");
         if (hit.selected === hit.correct) bar.className = "hit";
@@ -357,6 +366,7 @@
     });
     $("restart").addEventListener("click", () => {
       current = 0; score = 0; history = [];
+      startedAt = performance.now();
       $("answer-review").replaceChildren();
       $("results").hidden = true;
       $("quiz").hidden = false;
